@@ -12,6 +12,7 @@ module Curv = Curv
 
 let observe = Observe.observe
 let mse = Observe.mse
+let sse = Observe.sse
 let softmax_ce = Observe.softmax_ce
 
 type diagnostics = Sketch.diagnostics =

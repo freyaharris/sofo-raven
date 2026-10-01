@@ -63,6 +63,27 @@ let mse ?w y target =
   observe ~y ~curv loss;
   loss
 
+(* [sse ?w y target] is the sum of weighted squared error
+   [sum (w * (y - target)²)], observed with its exact curvature
+   (H = diag (2 w), or [2 I] without weights). The result is a scalar; [y]
+   and [target] must have the same shape. *)
+let sse ?w y target =
+  let shape_y = Nx.shape y in
+  if shape_y <> Nx.shape target
+  then invalid_arg "Sofo.sse: prediction and target must have the same shape";
+  let d = Nx.sub y target in
+  let sq = Nx.mul d d in
+  let loss, curv =
+    match w with
+    | None -> Nx.sum sq, Curv.scale 2.0
+    | Some w ->
+      let w = Nx.cast (Nx.dtype y) w in
+      let two_over_n = Nx_core.Dtype.of_float (Nx.dtype y) 2.0 in
+      Nx.sum (Nx.mul w sq), Curv.diag (Nx.mul_s w two_over_n)
+  in
+  observe ~y ~curv loss;
+  loss
+
 (* [softmax_ce y labels] is the cross entropy of the last axis of [y] against
    [labels], averaged over the leading (row) axes: [labels] has [y]'s shape
    without its last axis, and holds class indices in [0, num_classes). Its
